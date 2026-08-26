@@ -483,10 +483,6 @@ function renderLoginPage() {
             <div class="login-footer">
                 Don't have an account? <a href="#register">Register</a>
             </div>
-            <div style="margin-top:12px;padding:10px;background:var(--bg);border-radius:8px;font-size:0.75rem;color:var(--dark-light)">
-                <strong>Demo Login:</strong><br>
-                Phone: 9876543210 | Password: password123
-            </div>
         </div>
     </div>`;
 }
