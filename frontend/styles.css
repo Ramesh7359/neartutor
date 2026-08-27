@@ -391,6 +391,62 @@ body::before {
 }
 .stat-item .stat-label { font-size: 0.72rem; color: var(--dark-light); margin-top: 2px; font-weight: 500; }
 
+/* ============ Category Tiles ============ */
+.category-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    padding: 0 16px;
+}
+.category-tile {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    padding: 18px 10px;
+    text-align: center;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    border: 1px solid rgba(0,0,0,0.03);
+    position: relative;
+    overflow: hidden;
+}
+.category-tile::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 100%;
+    background: var(--cat-color);
+    opacity: 0.06;
+    transition: opacity 0.3s;
+}
+.category-tile:active {
+    transform: scale(0.94);
+    box-shadow: var(--shadow-md);
+}
+.category-tile:active::before { opacity: 0.12; }
+.category-icon {
+    width: 52px; height: 52px;
+    margin: 0 auto 8px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--cat-color);
+    color: #fff;
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--cat-color) 40%, transparent);
+    position: relative;
+    z-index: 1;
+}
+.category-icon .material-icons-round { font-size: 1.6rem; }
+.category-name {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--dark);
+    position: relative;
+    z-index: 1;
+    line-height: 1.2;
+}
+
 /* ============ Section Headers ============ */
 .section-header {
     display: flex;

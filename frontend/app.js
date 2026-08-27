@@ -6,9 +6,10 @@ const state = {
     user: JSON.parse(localStorage.getItem('nt_user') || 'null'),
     token: localStorage.getItem('nt_token') || null,
     teachers: [],
+    categories: [],
     currentTeacher: null,
     currentPage: 'home',
-    searchFilters: { subject: '', area: '', class_level: '', sort_by: 'rating' },
+    searchFilters: { category: '', subject: '', area: '', class_level: '', sort_by: 'rating' },
     userLocation: null,
 };
 
@@ -203,6 +204,12 @@ function renderHomePage() {
         </button>
     </div>
     <div class="section-header" style="margin-top:8px">
+        <h3>Browse by Category</h3>
+    </div>
+    <div class="category-grid" id="categoryGrid">
+        <div class="loading"><div class="spinner"></div></div>
+    </div>
+    <div class="section-header" style="margin-top:8px">
         <h3>Top Rated Tutors</h3>
         <a class="see-all" href="#search">See All</a>
     </div>
@@ -215,29 +222,37 @@ function renderHomePage() {
 function renderSearchPage() {
     return `
     <div style="padding:16px 16px 8px">
-        <h3 style="font-size:1.1rem;font-weight:700;">Find Tutors</h3>
+        <h3 style="font-size:1.1rem;font-weight:700;">Find Tutors & Trainers</h3>
     </div>
     <div style="padding:0 16px">
         <div class="search-row">
             <div class="input-group">
                 <span class="material-icons-round">search</span>
-                <input type="text" id="searchArea" placeholder="Area or pincode" value="${state.searchFilters.area}">
+                <input type="text" id="searchArea" placeholder="Area or pincode" value="${state.searchFilters.area || ''}">
             </div>
         </div>
         <div class="search-row" style="gap:6px">
             <div class="input-group">
-                <span class="material-icons-round">menu_book</span>
-                <select id="searchSubject">
-                    <option value="">Subject</option>
+                <span class="material-icons-round">category</span>
+                <select id="searchCategory" onchange="onCategoryChange()">
+                    <option value="">All Categories</option>
                 </select>
             </div>
+            <div class="input-group">
+                <span class="material-icons-round">menu_book</span>
+                <select id="searchSubject">
+                    <option value="">All Subjects</option>
+                </select>
+            </div>
+        </div>
+        <div class="search-row" style="gap:6px">
             <div class="input-group">
                 <span class="material-icons-round">sort</span>
                 <select id="searchSort" onchange="performSearch()">
                     <option value="rating">Top Rated</option>
-                    <option value="fee_low">Fee: Low</option>
-                    <option value="fee_high">Fee: High</option>
-                    <option value="experience">Experience</option>
+                    <option value="fee_low">Fee: Low to High</option>
+                    <option value="fee_high">Fee: High to Low</option>
+                    <option value="experience">Most Experienced</option>
                 </select>
             </div>
         </div>
@@ -249,7 +264,6 @@ function renderSearchPage() {
             Search nearby (GPS)
         </button>
     </div>
-    <div class="filter-chips" id="filterChips"></div>
     <div class="teacher-list" id="searchTeacherList">
         <div class="loading"><div class="spinner"></div></div>
     </div>`;
@@ -282,11 +296,11 @@ function renderTeacherProfilePage() {
         <p class="profile-detail">${t.bio || 'No bio available.'}</p>
     </div>
     <div class="profile-section">
-        <h4><span class="material-icons-round">menu_book</span> Subjects</h4>
+        <h4><span class="material-icons-round">menu_book</span> Subjects / Courses</h4>
         <div class="subject-tags">${(t.subjects||[]).map(s => `<span class="subject-tag">${s}</span>`).join('')}</div>
     </div>
     <div class="profile-section">
-        <h4><span class="material-icons-round">school</span> Classes</h4>
+        <h4><span class="material-icons-round">school</span> Levels</h4>
         <div class="subject-tags">${(t.classes||[]).map(c => `<span class="subject-tag">${c}</span>`).join('')}</div>
     </div>
     <div class="profile-section">
@@ -321,13 +335,13 @@ function renderRegisterChoicePage() {
     return `
     <div class="form-page" style="text-align:center;padding-top:40px">
         <h2>Join NearTutor</h2>
-        <p class="subtitle">Whether you teach or learn — we've got you covered</p>
+        <p class="subtitle">Teach a skill or find an expert — academics, music, tech, arts & more</p>
         <div style="display:flex;flex-direction:column;gap:12px;max-width:300px;margin:30px auto">
             <button class="btn btn-primary btn-block" onclick="navigate('register-teacher')" style="padding:16px">
-                <span class="material-icons-round">school</span> Register as Teacher
+                <span class="material-icons-round">school</span> Register as Tutor / Trainer
             </button>
             <button class="btn btn-secondary btn-block" onclick="navigate('register-student')" style="padding:16px">
-                <span class="material-icons-round">person</span> Register as Student
+                <span class="material-icons-round">person</span> Register as Learner
             </button>
         </div>
         <p style="margin-top:20px;font-size:0.85rem;color:var(--dark-light)">
@@ -355,17 +369,21 @@ function renderTeacherRegisterPage() {
             <div class="form-group"><label>Qualification *</label><input type="text" id="tRegQual" placeholder="e.g., M.Sc Mathematics" required></div>
             <div class="form-group"><label>Years of Experience *</label><input type="number" id="tRegExp" min="0" required></div>
             <div class="form-group">
-                <label>Subjects (select all that apply) *</label>
+                <label>Category *</label>
+                <select id="tRegCategory" required onchange="loadRegSubjects()">
+                    <option value="">Select a category</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Subjects / Courses (select all that apply) *</label>
                 <div class="multi-select" id="tRegSubjects">
-                    ${['Maths','Physics','Chemistry','Biology','English','Hindi','Telugu','Social Studies','Computer Science','Accountancy','Economics'].map(s => 
-                        `<div class="multi-chip" onclick="toggleChip(this)">${s}</div>`
-                    ).join('')}
+                    <span style="font-size:0.8rem;color:var(--gray)">Select a category first</span>
                 </div>
             </div>
             <div class="form-group">
-                <label>Classes You Teach *</label>
+                <label>Levels You Teach *</label>
                 <div class="multi-select" id="tRegClasses">
-                    ${['Class 1-5','Class 6-8','Class 9-10','Class 11-12','IIT-JEE','NEET','EAMCET'].map(c => 
+                    ${['Beginner','Intermediate','Advanced','All Levels','Class 1-5','Class 6-8','Class 9-10','Class 11-12','IIT-JEE','NEET','EAMCET','College / Graduate','Working Professional'].map(c => 
                         `<div class="multi-chip" onclick="toggleChip(this)">${c}</div>`
                     ).join('')}
                 </div>
@@ -422,20 +440,20 @@ function renderStudentRegisterPage() {
                 <div class="form-group"><label>Email</label><input type="email" id="sRegEmail"></div>
             </div>
             <div class="form-group"><label>Password *</label><input type="password" id="sRegPassword" required minlength="6"></div>
-            <div class="form-group"><label>Student Name</label><input type="text" id="sRegStudentName" placeholder="If different from above"></div>
+            <div class="form-group"><label>Learner Name</label><input type="text" id="sRegStudentName" placeholder="If different from above"></div>
             <div class="form-group">
-                <label>Current Class *</label>
+                <label>Current Level *</label>
                 <select id="sRegClass" required>
-                    <option value="">Select class</option>
-                    ${['Class 1','Class 2','Class 3','Class 4','Class 5','Class 6','Class 7','Class 8','Class 9','Class 10','Class 11','Class 12','IIT-JEE Prep','NEET Prep','EAMCET Prep'].map(c =>
+                    <option value="">Select level</option>
+                    ${['Beginner','Intermediate','Advanced','Class 1','Class 2','Class 3','Class 4','Class 5','Class 6','Class 7','Class 8','Class 9','Class 10','Class 11','Class 12','IIT-JEE Prep','NEET Prep','EAMCET Prep','College / Graduate','Working Professional'].map(c =>
                         `<option value="${c}">${c}</option>`
                     ).join('')}
                 </select>
             </div>
             <div class="form-group">
-                <label>Subjects Needed</label>
+                <label>Subjects / Courses Needed</label>
                 <div class="multi-select" id="sRegSubjects">
-                    ${['Maths','Physics','Chemistry','Biology','English','Hindi','Telugu','Social Studies','Computer Science'].map(s => 
+                    ${['Maths','Physics','Chemistry','Biology','English','Piano','Guitar','Vocals / Singing','Python','AWS Cloud','SQL Server DBA','Data Science','Yoga','Drawing & Sketching'].map(s => 
                         `<div class="multi-chip" onclick="toggleChip(this)">${s}</div>`
                     ).join('')}
                 </div>
@@ -619,6 +637,41 @@ function attachEventListeners() {
     if (state.currentPage === 'search') loadSearchPage();
     if (state.currentPage === 'teacher') loadTeacherProfile();
     if (state.currentPage === 'dashboard') loadDashboard();
+    if (state.currentPage === 'register-teacher') loadRegCategories();
+}
+
+// Load categories into the teacher registration form
+async function loadRegCategories() {
+    try {
+        if (!state.categories || state.categories.length === 0) {
+            state.categories = await api('/categories');
+        }
+        const sel = document.getElementById('tRegCategory');
+        if (sel) {
+            state.categories.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id; opt.textContent = c.name;
+                sel.appendChild(opt);
+            });
+        }
+    } catch(e) {}
+}
+
+// Load subjects for the selected category in registration
+async function loadRegSubjects() {
+    const cat = document.getElementById('tRegCategory')?.value || '';
+    const container = document.getElementById('tRegSubjects');
+    if (!container) return;
+    if (!cat) {
+        container.innerHTML = '<span style="font-size:0.8rem;color:var(--gray)">Select a category first</span>';
+        return;
+    }
+    try {
+        const subjects = await api(`/subjects?category=${cat}`);
+        container.innerHTML = subjects.map(s =>
+            `<div class="multi-chip" onclick="toggleChip(this)">${s}</div>`
+        ).join('');
+    } catch(e) {}
 }
 
 async function loadHomePage() {
@@ -635,6 +688,21 @@ async function loadHomePage() {
         }
     } catch(e) {}
 
+    // Load category tiles
+    try {
+        const categories = await api('/categories');
+        state.categories = categories;
+        const grid = document.getElementById('categoryGrid');
+        if (grid) {
+            grid.innerHTML = categories.map(c => `
+                <div class="category-tile" style="--cat-color:${c.color}" onclick="browseCategory('${c.id}','${c.name}')">
+                    <div class="category-icon"><span class="material-icons-round">${c.icon}</span></div>
+                    <div class="category-name">${c.name}</div>
+                </div>
+            `).join('');
+        }
+    } catch(e) {}
+
     // Load top teachers
     try {
         const teachers = await api('/teachers?sort_by=rating');
@@ -646,37 +714,73 @@ async function loadHomePage() {
     }
 }
 
+function browseCategory(categoryId, categoryName) {
+    state.searchFilters = { category: categoryId, categoryName: categoryName, subject: '', area: '', sort_by: 'rating' };
+    navigate('search');
+}
+
 async function loadSearchPage() {
-    // Load subjects
+    // Load categories dropdown
     try {
-        const subjects = await api('/subjects');
-        const select = document.getElementById('searchSubject');
-        if (select) {
-            subjects.forEach(s => {
+        if (!state.categories || state.categories.length === 0) {
+            state.categories = await api('/categories');
+        }
+        const catSelect = document.getElementById('searchCategory');
+        if (catSelect) {
+            state.categories.forEach(c => {
                 const opt = document.createElement('option');
-                opt.value = s; opt.textContent = s;
-                if (s === state.searchFilters.subject) opt.selected = true;
-                select.appendChild(opt);
+                opt.value = c.id; opt.textContent = c.name;
+                if (c.id === state.searchFilters.category) opt.selected = true;
+                catSelect.appendChild(opt);
             });
         }
     } catch(e) {}
 
-    // Load all teachers
+    // Load subjects (filtered by category if one is selected)
+    await loadSubjectsForCategory(state.searchFilters.category || '');
+
+    // Load results
+    performSearch();
+}
+
+async function loadSubjectsForCategory(categoryId) {
+    const select = document.getElementById('searchSubject');
+    if (!select) return;
+    select.innerHTML = '<option value="">All Subjects</option>';
+    try {
+        const url = categoryId ? `/subjects?category=${categoryId}` : '/subjects';
+        const subjects = await api(url);
+        subjects.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s; opt.textContent = s;
+            if (s === state.searchFilters.subject) opt.selected = true;
+            select.appendChild(opt);
+        });
+    } catch(e) {}
+}
+
+function onCategoryChange() {
+    const cat = document.getElementById('searchCategory')?.value || '';
+    state.searchFilters.category = cat;
+    state.searchFilters.subject = '';
+    loadSubjectsForCategory(cat);
     performSearch();
 }
 
 async function performSearch() {
     const area = document.getElementById('searchArea')?.value || '';
     const subject = document.getElementById('searchSubject')?.value || '';
+    const category = document.getElementById('searchCategory')?.value || '';
     const sort = document.getElementById('searchSort')?.value || 'rating';
 
-    state.searchFilters = { area, subject, sort_by: sort };
+    state.searchFilters = { area, subject, category, sort_by: sort };
 
     const list = document.getElementById('searchTeacherList');
     if (list) list.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
 
     try {
         let url = `/teachers?sort_by=${sort}`;
+        if (category) url += `&category=${encodeURIComponent(category)}`;
         if (subject) url += `&subject=${encodeURIComponent(subject)}`;
         if (area) url += `&area=${encodeURIComponent(area)}`;
         const teachers = await api(url);
@@ -777,6 +881,7 @@ async function submitTeacherRegistration(e) {
         password: document.getElementById('tRegPassword').value,
         qualification: document.getElementById('tRegQual').value,
         experience_years: parseInt(document.getElementById('tRegExp').value),
+        category: document.getElementById('tRegCategory').value,
         subjects: selectedSubjects,
         classes: selectedClasses,
         teaching_mode: document.getElementById('tRegMode').value,

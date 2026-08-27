@@ -17,13 +17,14 @@ class Teacher(Base):
     # Professional details
     qualification = Column(String(200))  # B.Tech, M.Sc, PhD
     experience_years = Column(Integer, default=0)
+    category = Column(String(50), default="academics", index=True)  # academics, music, technology, languages, arts, competitive
     subjects = Column(Text)  # JSON: ["Maths", "Physics", "Chemistry"]
     classes = Column(Text)  # JSON: ["Class 9", "Class 10", "IIT-JEE"]
     teaching_mode = Column(String(50), default="both")  # home_visit, online, both
     bio = Column(Text)  # Short description about themselves
 
     # Location
-    area = Column(String(100))  # Kukatpally, KPHB, Ameerpet
+    area = Column(String(100), index=True)  # Kukatpally, KPHB, Ameerpet
     city = Column(String(50), default="Hyderabad")
     pincode = Column(String(10))
     latitude = Column(Float)

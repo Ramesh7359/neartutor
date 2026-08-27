@@ -81,6 +81,7 @@ def seed_data():
                 name="Ramesh Kumar", phone="9876543210",
                 email="ramesh@example.com", password_hash=hash_password("password123"),
                 qualification="M.Sc Mathematics", experience_years=8,
+                category="academics",
                 subjects=json.dumps(["Maths", "Statistics"]),
                 classes=json.dumps(["Class 9", "Class 10", "Class 11", "Class 12", "IIT-JEE"]),
                 teaching_mode="both", bio="Passionate math teacher with 8 years experience. IIT-JEE specialist.",
@@ -95,6 +96,7 @@ def seed_data():
                 name="Priya Sharma", phone="9876543211",
                 email="priya@example.com", password_hash=hash_password("password123"),
                 qualification="B.Tech + M.Ed", experience_years=5,
+                category="academics",
                 subjects=json.dumps(["Physics", "Chemistry"]),
                 classes=json.dumps(["Class 9", "Class 10", "Class 11", "Class 12"]),
                 teaching_mode="home_visit", bio="Making Physics and Chemistry easy and fun!",
@@ -109,6 +111,7 @@ def seed_data():
                 name="Suresh Reddy", phone="9876543212",
                 email="suresh@example.com", password_hash=hash_password("password123"),
                 qualification="M.A English Literature", experience_years=10,
+                category="languages",
                 subjects=json.dumps(["English", "Social Studies"]),
                 classes=json.dumps(["Class 6", "Class 7", "Class 8", "Class 9", "Class 10"]),
                 teaching_mode="both", bio="10 years experience in CBSE and ICSE English curriculum.",
@@ -123,6 +126,7 @@ def seed_data():
                 name="Lakshmi Devi", phone="9876543213",
                 email="lakshmi@example.com", password_hash=hash_password("password123"),
                 qualification="M.Sc Chemistry + B.Ed", experience_years=12,
+                category="competitive",
                 subjects=json.dumps(["Chemistry", "Biology"]),
                 classes=json.dumps(["Class 8", "Class 9", "Class 10", "Class 11", "Class 12", "NEET"]),
                 teaching_mode="both", bio="NEET specialist with 12 years of coaching experience. 50+ students cracked NEET.",
@@ -137,6 +141,7 @@ def seed_data():
                 name="Vijay Prakash", phone="9876543214",
                 email="vijay@example.com", password_hash=hash_password("password123"),
                 qualification="B.Tech CSE, IIT Bombay", experience_years=4,
+                category="competitive",
                 subjects=json.dumps(["Computer Science", "Maths"]),
                 classes=json.dumps(["Class 11", "Class 12", "IIT-JEE"]),
                 teaching_mode="online", bio="IIT Bombay graduate. Teaching coding and advanced maths. JEE Mains & Advanced specialist.",
@@ -151,6 +156,7 @@ def seed_data():
                 name="Fatima Begum", phone="9876543215",
                 email="fatima@example.com", password_hash=hash_password("password123"),
                 qualification="M.A Hindi + M.A Urdu", experience_years=15,
+                category="languages",
                 subjects=json.dumps(["Hindi", "Telugu", "English"]),
                 classes=json.dumps(["Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "Class 7", "Class 8"]),
                 teaching_mode="home_visit", bio="Specializing in primary and middle school language development. Multilingual teaching.",
@@ -160,6 +166,114 @@ def seed_data():
                 available_days=json.dumps(["Mon", "Tue", "Wed", "Thu", "Fri"]),
                 available_time_from="09:00", available_time_to="17:00",
                 is_verified=True, rating=4.4, total_students=40
+            ),
+            # ===== Music Tutors =====
+            Teacher(
+                name="Arjun Menon", phone="9876543216",
+                email="arjun@example.com", password_hash=hash_password("password123"),
+                qualification="Trinity College London, Grade 8 Piano", experience_years=9,
+                category="music",
+                subjects=json.dumps(["Piano", "Keyboard", "Western Classical"]),
+                classes=json.dumps(["Beginner", "Intermediate", "Advanced", "All Levels"]),
+                teaching_mode="both", bio="Concert pianist and certified instructor. Trinity & ABRSM exam prep. Kids and adults welcome.",
+                area="Gachibowli", city="Hyderabad", pincode="500032",
+                latitude=17.4401, longitude=78.3489, travel_radius_km=8,
+                fee_per_hour=800, fee_per_month=6000,
+                available_days=json.dumps(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]),
+                available_time_from="10:00", available_time_to="20:00",
+                is_verified=True, rating=4.9, total_students=35
+            ),
+            Teacher(
+                name="Neha Kapoor", phone="9876543217",
+                email="neha@example.com", password_hash=hash_password("password123"),
+                qualification="B.A Music, 10 yrs performing artist", experience_years=10,
+                category="music",
+                subjects=json.dumps(["Guitar", "Ukulele", "Vocals / Singing"]),
+                classes=json.dumps(["Beginner", "Intermediate", "All Levels"]),
+                teaching_mode="both", bio="Guitarist and vocal coach. Acoustic, electric & fingerstyle. Learn your favourite songs fast!",
+                area="Kukatpally", city="Hyderabad", pincode="500072",
+                latitude=17.4948, longitude=78.4000, travel_radius_km=6,
+                fee_per_hour=600, fee_per_month=4500,
+                available_days=json.dumps(["Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]),
+                available_time_from="11:00", available_time_to="19:00",
+                is_verified=True, rating=4.7, total_students=42
+            ),
+            Teacher(
+                name="Kailash Iyer", phone="9876543218",
+                email="kailash@example.com", password_hash=hash_password("password123"),
+                qualification="Sangeet Visharad, Carnatic Vocalist", experience_years=18,
+                category="music",
+                subjects=json.dumps(["Carnatic Music", "Vocals / Singing", "Veena"]),
+                classes=json.dumps(["Beginner", "Intermediate", "Advanced"]),
+                teaching_mode="home_visit", bio="Traditional Carnatic music guru. 18 years of teaching classical vocals and veena.",
+                area="Ameerpet", city="Hyderabad", pincode="500016",
+                latitude=17.4375, longitude=78.4483, travel_radius_km=5,
+                fee_per_hour=500, fee_per_month=4000,
+                available_days=json.dumps(["Mon", "Wed", "Fri", "Sat", "Sun"]),
+                available_time_from="06:00", available_time_to="10:00",
+                is_verified=True, rating=4.8, total_students=60
+            ),
+            # ===== Tech & Corporate Trainers =====
+            Teacher(
+                name="Sandeep Rao", phone="9876543219",
+                email="sandeep@example.com", password_hash=hash_password("password123"),
+                qualification="Microsoft Certified DBA, 12 yrs industry", experience_years=12,
+                category="technology",
+                subjects=json.dumps(["SQL Server DBA", "PostgreSQL", "PowerShell"]),
+                classes=json.dumps(["Working Professional", "College / Graduate", "All Levels"]),
+                teaching_mode="online", bio="Senior Database Administrator. Corporate trainer for SQL Server, PostgreSQL, HA/DR, performance tuning & PowerShell automation.",
+                area="HITEC City", city="Hyderabad", pincode="500081",
+                latitude=17.4435, longitude=78.3772, travel_radius_km=15,
+                fee_per_hour=1200, fee_per_month=15000,
+                available_days=json.dumps(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]),
+                available_time_from="19:00", available_time_to="23:00",
+                is_verified=True, rating=4.9, total_students=120
+            ),
+            Teacher(
+                name="Divya Nair", phone="9876543220",
+                email="divya@example.com", password_hash=hash_password("password123"),
+                qualification="AWS Certified Solutions Architect - Professional", experience_years=8,
+                category="technology",
+                subjects=json.dumps(["AWS Cloud", "DevOps", "Docker & Kubernetes", "Python"]),
+                classes=json.dumps(["Working Professional", "College / Graduate"]),
+                teaching_mode="online", bio="Cloud & DevOps trainer. AWS, CI/CD, Terraform, Docker, Kubernetes. Real-world project based learning.",
+                area="Madhapur", city="Hyderabad", pincode="500081",
+                latitude=17.4486, longitude=78.3908, travel_radius_km=20,
+                fee_per_hour=1500, fee_per_month=18000,
+                available_days=json.dumps(["Mon", "Tue", "Wed", "Thu", "Fri", "Sun"]),
+                available_time_from="20:00", available_time_to="23:00",
+                is_verified=True, rating=4.8, total_students=95
+            ),
+            Teacher(
+                name="Ravi Teja", phone="9876543221",
+                email="ravi@example.com", password_hash=hash_password("password123"),
+                qualification="Data Scientist, M.Tech IIT Madras", experience_years=6,
+                category="technology",
+                subjects=json.dumps(["Python", "Data Science", "Machine Learning", "Power BI"]),
+                classes=json.dumps(["College / Graduate", "Working Professional", "All Levels"]),
+                teaching_mode="both", bio="Data Science & ML trainer. Python, pandas, scikit-learn, deep learning, and analytics with Power BI.",
+                area="Kondapur", city="Hyderabad", pincode="500084",
+                latitude=17.4700, longitude=78.3538, travel_radius_km=12,
+                fee_per_hour=1000, fee_per_month=12000,
+                available_days=json.dumps(["Sat", "Sun", "Mon", "Wed", "Fri"]),
+                available_time_from="09:00", available_time_to="21:00",
+                is_verified=True, rating=4.7, total_students=70
+            ),
+            # ===== Arts & Hobbies =====
+            Teacher(
+                name="Meera Joshi", phone="9876543222",
+                email="meera@example.com", password_hash=hash_password("password123"),
+                qualification="Certified Yoga Instructor + Fine Arts Diploma", experience_years=7,
+                category="arts",
+                subjects=json.dumps(["Yoga", "Painting", "Drawing & Sketching"]),
+                classes=json.dumps(["Beginner", "Intermediate", "All Levels"]),
+                teaching_mode="both", bio="Yoga & art instructor. Morning yoga sessions and creative painting/sketching classes for all ages.",
+                area="Miyapur", city="Hyderabad", pincode="500049",
+                latitude=17.4969, longitude=78.3548, travel_radius_km=6,
+                fee_per_hour=400, fee_per_month=3000,
+                available_days=json.dumps(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]),
+                available_time_from="06:00", available_time_to="18:00",
+                is_verified=True, rating=4.6, total_students=48
             ),
         ]
         db.add_all(teachers)
@@ -216,6 +330,7 @@ def register_teacher(request: dict, db: Session = Depends(get_db)):
         password_hash=hash_password(request.get("password", "password123")),
         qualification=request.get("qualification"),
         experience_years=request.get("experience_years", 0),
+        category=request.get("category", "academics"),
         subjects=json.dumps(request.get("subjects", [])),
         classes=json.dumps(request.get("classes", [])),
         teaching_mode=request.get("teaching_mode", "both"),
@@ -240,9 +355,17 @@ def register_teacher(request: dict, db: Session = Depends(get_db)):
 
 @app.get("/api/teachers")
 def get_teachers(subject: str = None, area: str = None, class_level: str = None,
-                 mode: str = None, min_rating: float = None,
-                 sort_by: str = "rating", db: Session = Depends(get_db)):
+                 category: str = None, mode: str = None, min_rating: float = None,
+                 sort_by: str = "rating", limit: int = 100, offset: int = 0,
+                 db: Session = Depends(get_db)):
+    # Push filters into the DB query where possible for scalability
     query = db.query(Teacher).filter_by(is_active=True)
+    if category:
+        query = query.filter(Teacher.category == category)
+    if area:
+        query = query.filter(Teacher.area.ilike(f"%{area}%"))
+    if min_rating:
+        query = query.filter(Teacher.rating >= min_rating)
     teachers = query.all()
 
     result = []
@@ -250,20 +373,18 @@ def get_teachers(subject: str = None, area: str = None, class_level: str = None,
         subjects = json.loads(t.subjects) if t.subjects else []
         classes = json.loads(t.classes) if t.classes else []
 
+        # Subject and class are JSON columns, so filter in Python
         if subject and subject.lower() not in [s.lower() for s in subjects]:
-            continue
-        if area and area.lower() not in (t.area or "").lower():
             continue
         if class_level and class_level not in classes:
             continue
         if mode and mode != "both" and t.teaching_mode != "both" and t.teaching_mode != mode:
             continue
-        if min_rating and t.rating < min_rating:
-            continue
 
         result.append({
             "id": t.id, "name": t.name, "phone": t.phone,
             "qualification": t.qualification, "experience_years": t.experience_years,
+            "category": t.category,
             "subjects": subjects, "classes": classes,
             "teaching_mode": t.teaching_mode, "bio": t.bio,
             "area": t.area, "city": t.city, "pincode": t.pincode,
@@ -287,7 +408,8 @@ def get_teachers(subject: str = None, area: str = None, class_level: str = None,
     elif sort_by == "experience":
         result.sort(key=lambda x: x["experience_years"], reverse=True)
 
-    return result
+    # Pagination for handling large volumes
+    return result[offset:offset + limit]
 
 
 @app.get("/api/teachers/nearby")
@@ -329,6 +451,7 @@ def get_teacher_profile(teacher_id: int, db: Session = Depends(get_db)):
     return {
         "id": t.id, "name": t.name, "phone": t.phone, "email": t.email,
         "qualification": t.qualification, "experience_years": t.experience_years,
+        "category": t.category,
         "subjects": json.loads(t.subjects) if t.subjects else [],
         "classes": json.loads(t.classes) if t.classes else [],
         "teaching_mode": t.teaching_mode, "bio": t.bio,
@@ -625,23 +748,104 @@ def get_stats(db: Session = Depends(get_db)):
     }
 
 
-# ============ SUBJECTS / CLASSES ============
+# ============ CATEGORIES / SUBJECTS / CLASSES ============
+CATEGORIES = [
+    {
+        "id": "academics",
+        "name": "Academics",
+        "icon": "school",
+        "color": "#6c5ce7",
+        "subjects": [
+            "Maths", "Physics", "Chemistry", "Biology",
+            "Social Studies", "Accountancy", "Economics",
+            "Computer Science", "Environmental Science"
+        ]
+    },
+    {
+        "id": "competitive",
+        "name": "Competitive Exams",
+        "icon": "emoji_events",
+        "color": "#e17055",
+        "subjects": [
+            "IIT-JEE", "NEET", "EAMCET", "GATE", "CAT",
+            "UPSC", "Bank PO", "SSC", "GRE", "GMAT", "IELTS", "TOEFL"
+        ]
+    },
+    {
+        "id": "music",
+        "name": "Music",
+        "icon": "music_note",
+        "color": "#e84393",
+        "subjects": [
+            "Piano", "Guitar", "Violin", "Keyboard", "Drums",
+            "Flute", "Vocals / Singing", "Tabla", "Veena", "Sitar",
+            "Saxophone", "Ukulele", "Harmonium", "Carnatic Music", "Western Classical"
+        ]
+    },
+    {
+        "id": "technology",
+        "name": "Tech & IT",
+        "icon": "computer",
+        "color": "#0984e3",
+        "subjects": [
+            "Python", "Java", "JavaScript", "C / C++", "AWS Cloud",
+            "Azure", "SQL Server DBA", "PostgreSQL", "MySQL", "PowerShell",
+            "Linux / Shell", "Data Science", "Machine Learning", "DevOps",
+            "Docker & Kubernetes", "React", "Node.js", "Cybersecurity",
+            "Data Analytics", "Power BI", "Tableau", "Salesforce", "SAP"
+        ]
+    },
+    {
+        "id": "languages",
+        "name": "Languages",
+        "icon": "translate",
+        "color": "#00b894",
+        "subjects": [
+            "English", "Hindi", "Telugu", "Tamil", "Kannada",
+            "Spanish", "French", "German", "Japanese", "Sanskrit", "Urdu"
+        ]
+    },
+    {
+        "id": "arts",
+        "name": "Arts & Hobbies",
+        "icon": "palette",
+        "color": "#fdcb6e",
+        "subjects": [
+            "Drawing & Sketching", "Painting", "Dance", "Yoga",
+            "Photography", "Chess", "Calligraphy", "Craft", "Public Speaking"
+        ]
+    },
+]
+
+
+@app.get("/api/categories")
+def get_categories():
+    return CATEGORIES
+
+
 @app.get("/api/subjects")
-def get_subjects():
-    return [
-        "Maths", "Physics", "Chemistry", "Biology",
-        "English", "Hindi", "Telugu", "Social Studies",
-        "Computer Science", "Accountancy", "Economics",
-        "IIT-JEE", "NEET", "EAMCET"
-    ]
+def get_subjects(category: str = None):
+    if category:
+        for cat in CATEGORIES:
+            if cat["id"] == category:
+                return cat["subjects"]
+        return []
+    # Return flat list of all subjects
+    all_subjects = []
+    for cat in CATEGORIES:
+        all_subjects.extend(cat["subjects"])
+    return all_subjects
 
 
 @app.get("/api/classes")
 def get_classes():
     return [
+        "Beginner", "Intermediate", "Advanced",
         "Class 1", "Class 2", "Class 3", "Class 4", "Class 5",
         "Class 6", "Class 7", "Class 8", "Class 9", "Class 10",
-        "Class 11", "Class 12", "IIT-JEE Prep", "NEET Prep", "EAMCET Prep"
+        "Class 11", "Class 12",
+        "IIT-JEE Prep", "NEET Prep", "EAMCET Prep",
+        "College / Graduate", "Working Professional", "All Levels"
     ]
 
 
