@@ -173,8 +173,8 @@ function renderPage() {
 function renderHomePage() {
     return `
     <section class="hero-section">
-        <h2>Find Expert Tutors Near You</h2>
-        <p>Maths, Science, English & more — verified tutors within walking distance</p>
+        <h2>Learning Starts Next Door</h2>
+        <p>Trusted local tutors, matched to your subject and neighborhood</p>
     </section>
     <div class="search-card">
         <h3>Quick Search</h3>
@@ -201,12 +201,7 @@ function renderHomePage() {
             Find Tutors
         </button>
     </div>
-    <div class="stats-bar" id="statsBar">
-        <div class="stat-item"><div class="stat-value">--</div><div class="stat-label">Tutors</div></div>
-        <div class="stat-item"><div class="stat-value">--</div><div class="stat-label">Students</div></div>
-        <div class="stat-item"><div class="stat-value">--</div><div class="stat-label">Bookings</div></div>
-    </div>
-    <div class="section-header">
+    <div class="section-header" style="margin-top:8px">
         <h3>Top Rated Tutors</h3>
         <a class="see-all" href="#search">See All</a>
     </div>
@@ -636,19 +631,6 @@ async function loadHomePage() {
                 opt.value = s; opt.textContent = s;
                 select.appendChild(opt);
             });
-        }
-    } catch(e) {}
-
-    // Load stats
-    try {
-        const stats = await api('/stats');
-        const bar = document.getElementById('statsBar');
-        if (bar) {
-            bar.innerHTML = `
-                <div class="stat-item"><div class="stat-value">${stats.total_teachers}</div><div class="stat-label">Tutors</div></div>
-                <div class="stat-item"><div class="stat-value">${stats.total_students}</div><div class="stat-label">Students</div></div>
-                <div class="stat-item"><div class="stat-value">${stats.total_requests}</div><div class="stat-label">Bookings</div></div>
-            `;
         }
     } catch(e) {}
 
