@@ -1,4 +1,4 @@
-const CACHE_NAME = 'neartutor-v2';
+const CACHE_NAME = 'neartutor-v3';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
@@ -48,19 +48,36 @@ self.addEventListener('fetch', event => {
         return;
     }
 
-    // Static assets - cache first, then network
+    // App files (html/js/css) - network first so updates show immediately
+    const isAppFile = url.pathname === '/' ||
+                      url.pathname.endsWith('.html') ||
+                      url.pathname.endsWith('.js') ||
+                      url.pathname.endsWith('.css');
+
+    if (isAppFile) {
+        event.respondWith(
+            fetch(request).then(response => {
+                if (response.status === 200) {
+                    const clone = response.clone();
+                    caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
+                }
+                return response;
+            }).catch(() => caches.match(request).then(c => c || caches.match('/index.html')))
+        );
+        return;
+    }
+
+    // Other static assets (icons, fonts) - cache first, then network
     event.respondWith(
         caches.match(request).then(cached => {
             if (cached) return cached;
             return fetch(request).then(response => {
-                // Cache successful responses
                 if (response.status === 200) {
                     const clone = response.clone();
                     caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
                 }
                 return response;
             }).catch(() => {
-                // Fallback for navigation
                 if (request.mode === 'navigate') {
                     return caches.match('/index.html');
                 }
