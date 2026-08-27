@@ -173,7 +173,7 @@ function renderPage() {
 function renderHomePage() {
     return `
     <section class="hero-section">
-        <h2>Learning Starts Next Door</h2>
+        <h2>Your Next Great Teacher is Nearby</h2>
         <p>Trusted local tutors, matched to your subject and neighborhood</p>
     </section>
     <div class="search-card">
