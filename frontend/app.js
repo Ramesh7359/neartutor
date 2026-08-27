@@ -115,15 +115,16 @@ function renderHeader() {
     <header class="top-header">
         <div class="logo">Near<span>Tutor</span></div>
         <nav class="nav-desktop">
-            <a href="#home" style="color:${state.currentPage==='home'?'var(--primary)':'#ddd'};font-size:0.9rem">Home</a>
-            <a href="#search" style="color:${state.currentPage==='search'?'var(--primary)':'#ddd'};font-size:0.9rem">Search</a>
-            ${isLoggedIn() ? `<a href="#dashboard" style="color:${state.currentPage==='dashboard'?'var(--primary)':'#ddd'};font-size:0.9rem">Dashboard</a>` : ''}
+            <a href="#home" class="nav-link ${state.currentPage==='home'?'active':''}">Home</a>
+            <a href="#search" class="nav-link ${state.currentPage==='search'?'active':''}">Search</a>
+            <a href="#register" class="nav-link ${state.currentPage==='register'?'active':''}">Register</a>
+            ${isLoggedIn() ? `<a href="#dashboard" class="nav-link ${state.currentPage==='dashboard'?'active':''}">Dashboard</a>` : ''}
         </nav>
         <div class="header-actions">
             ${isLoggedIn() ? `
                 <div class="user-avatar" onclick="navigate('dashboard')">${state.user.name.charAt(0).toUpperCase()}</div>
             ` : `
-                <button class="header-btn" onclick="navigate('login')">
+                <button class="header-btn" onclick="navigate('login')" title="Login">
                     <span class="material-icons-round">person</span>
                 </button>
             `}

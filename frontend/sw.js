@@ -1,4 +1,4 @@
-const CACHE_NAME = 'neartutor-v3';
+const CACHE_NAME = 'neartutor-v4';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
