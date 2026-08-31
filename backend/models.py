@@ -94,9 +94,18 @@ class TuitionRequest(Base):
     preferred_days = Column(String(200))  # "Mon, Wed, Fri"
     teaching_mode = Column(String(50))  # home_visit, online
 
+    # Scheduling
+    session_date = Column(String(20))  # "2026-09-01" preferred start date
+    session_time = Column(String(10))  # "17:00" preferred slot
+
     # Status: pending, accepted, rejected, cancelled, completed
     status = Column(String(20), default="pending")
     teacher_response = Column(Text)  # Teacher's reply message
+
+    # Payment (payment-ready; wire to a real gateway later)
+    fee_amount = Column(Float, default=0)  # agreed/estimated fee
+    payment_status = Column(String(20), default="unpaid")  # unpaid, paid, refunded
+    payment_ref = Column(String(100))  # gateway reference (demo)
 
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
@@ -114,3 +123,16 @@ class Review(Base):
     rating = Column(Integer, nullable=False)  # 1-5
     review_text = Column(Text)
     created_at = Column(DateTime, server_default=func.now())
+
+
+class Message(Base):
+    """Simple in-app messaging between a student and a teacher (polled, not websocket)."""
+    __tablename__ = "messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    teacher_id = Column(Integer, ForeignKey("teachers.id"), nullable=False, index=True)
+    student_id = Column(Integer, ForeignKey("students.id"), nullable=False, index=True)
+    sender_role = Column(String(10), nullable=False)  # "student" or "teacher"
+    text = Column(Text, nullable=False)
+    is_read = Column(Boolean, default=False)
+    created_at = Column(DateTime, server_default=func.now(), index=True)

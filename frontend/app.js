@@ -11,7 +11,24 @@ const state = {
     currentPage: 'home',
     searchFilters: { category: '', subject: '', area: '', class_level: '', sort_by: 'rating' },
     userLocation: null,
+    chatPartner: null,   // { id, name, photo } of the person we're chatting with
+    chatPollTimer: null,
 };
+
+// ============ Avatar helper (photo or colored initials) ============
+const AVATAR_COLORS = ['#6c5ce7', '#e84393', '#00b894', '#0984e3', '#e17055', '#fdcb6e', '#00cec9', '#a29bfe'];
+function avatarColor(name) {
+    const s = (name || '?').charCodeAt(0) || 0;
+    return AVATAR_COLORS[s % AVATAR_COLORS.length];
+}
+function avatarHtml(name, photoUrl, sizeClass) {
+    const cls = sizeClass || 'avatar';
+    if (photoUrl) {
+        return `<div class="${cls}" style="background-image:url('${photoUrl}');background-size:cover;background-position:center"></div>`;
+    }
+    const initial = (name || '?').charAt(0).toUpperCase();
+    return `<div class="${cls}" style="background:${avatarColor(name)}">${initial}</div>`;
+}
 
 // ============ Auth Helpers ============
 function isLoggedIn() { return !!state.token; }
@@ -54,6 +71,11 @@ async function api(endpoint, options = {}) {
 
 // ============ Router ============
 function navigate(page, params = {}) {
+    // stop chat polling when leaving the chat page
+    if (state.chatPollTimer && page !== 'chat') {
+        clearInterval(state.chatPollTimer);
+        state.chatPollTimer = null;
+    }
     state.currentPage = page;
     state.pageParams = params;
     window.location.hash = page;
@@ -134,11 +156,16 @@ function renderHeader() {
 }
 
 function renderBottomNav() {
-    const items = [
+    const items = isLoggedIn() ? [
+        { icon: 'home', label: 'Home', page: 'home' },
+        { icon: 'search', label: 'Search', page: 'search' },
+        { icon: 'chat_bubble', label: 'Messages', page: 'messages' },
+        { icon: 'dashboard', label: 'Dashboard', page: 'dashboard' },
+    ] : [
         { icon: 'home', label: 'Home', page: 'home' },
         { icon: 'search', label: 'Search', page: 'search' },
         { icon: 'person_add', label: 'Register', page: 'register' },
-        { icon: 'dashboard', label: 'Dashboard', page: isLoggedIn() ? 'dashboard' : 'login' },
+        { icon: 'login', label: 'Login', page: 'login' },
     ];
     return `
     <nav class="bottom-nav">
@@ -167,6 +194,8 @@ function renderPage() {
         case 'login': return renderLoginPage();
         case 'dashboard': return isLoggedIn() ? renderDashboardPage() : renderLoginPage();
         case 'booking': return renderBookingPage();
+        case 'messages': return isLoggedIn() ? renderConversationsPage() : renderLoginPage();
+        case 'chat': return isLoggedIn() ? renderChatPage() : renderLoginPage();
         default: return renderHomePage();
     }
 }
@@ -281,7 +310,7 @@ function renderTeacherProfilePage() {
         <button class="back-btn" onclick="history.back()" style="color:rgba(255,255,255,0.7);margin-bottom:10px">
             <span class="material-icons-round">arrow_back</span> Back
         </button>
-        <div class="profile-avatar">${t.name.charAt(0)}</div>
+        ${avatarHtml(t.name, t.photo_url, 'profile-avatar')}
         <div class="name">${t.name}</div>
         <div class="qualification">${t.qualification}</div>
         ${t.is_verified ? '<div style="margin-top:6px"><span class="verified-badge">✓ Verified</span></div>' : ''}
@@ -324,6 +353,10 @@ function renderTeacherProfilePage() {
         <button class="btn btn-primary btn-block" onclick="openBookingModal(${t.id})">
             <span class="material-icons-round">send</span> Request Tuition
         </button>
+        ${isLoggedIn() && getRole() === 'student' ? `
+        <button class="btn btn-secondary btn-block" style="margin-top:8px" onclick="openChat(${t.id}, '${(t.name||'').replace(/'/g,"&#39;")}', '${t.photo_url||''}')">
+            <span class="material-icons-round">chat_bubble</span> Message Tutor
+        </button>` : ''}
         <a href="tel:${t.phone}" class="btn btn-outline btn-block" style="margin-top:8px">
             <span class="material-icons-round">call</span> Call Teacher
         </a>
@@ -568,7 +601,20 @@ function renderBookingPage() {
                 </select>
             </div>
             <div class="form-group"><label>Your Area *</label><input type="text" id="bookArea" required placeholder="e.g., KPHB Colony"></div>
-            <div class="form-group"><label>Preferred Time</label><input type="text" id="bookTime" placeholder="e.g., Evenings 5-7 PM"></div>
+            <div class="section-label"><span class="material-icons-round">event</span> Schedule your first session</div>
+            <div class="form-row">
+                <div class="form-group"><label>Preferred Date</label><input type="date" id="bookDate"></div>
+                <div class="form-group"><label>Time Slot</label>
+                    <select id="bookSlot">
+                        <option value="">Any time</option>
+                        <option value="06:00">Morning (6-9 AM)</option>
+                        <option value="09:00">Day (9-12 PM)</option>
+                        <option value="15:00">Afternoon (3-5 PM)</option>
+                        <option value="17:00">Evening (5-8 PM)</option>
+                        <option value="20:00">Night (8-10 PM)</option>
+                    </select>
+                </div>
+            </div>
             <div class="form-group"><label>Preferred Days</label><input type="text" id="bookDays" placeholder="e.g., Mon, Wed, Fri"></div>
             <div class="form-group">
                 <label>Mode</label>
@@ -579,12 +625,106 @@ function renderBookingPage() {
                 </select>
             </div>
             <div class="form-group"><label>Message to Teacher</label><textarea id="bookMessage" placeholder="Tell the teacher what you need help with..."></textarea></div>
+            ${t ? `<div class="fee-box">
+                <span>Estimated fee</span>
+                <strong>₹${t.fee_per_hour}/hour</strong>
+            </div>` : ''}
             <input type="hidden" id="bookTeacherId" value="${t ? t.id : ''}">
             <button type="submit" class="btn btn-primary btn-block" style="margin-top:10px">
                 <span class="material-icons-round">send</span> Send Request
             </button>
+            <p style="text-align:center;font-size:0.75rem;color:var(--gray);margin-top:8px">You'll pay after the tutor accepts. No charge now.</p>
         </form>
     </div>`;
+}
+
+// ============ CONVERSATIONS PAGE ============
+function renderConversationsPage() {
+    return `
+    <div style="padding:16px 16px 8px"><h3 style="font-size:1.15rem;font-weight:800;">Messages</h3></div>
+    <div id="conversationsList"><div class="loading"><div class="spinner"></div></div></div>`;
+}
+
+async function loadConversations() {
+    const el = document.getElementById('conversationsList');
+    if (!el) return;
+    try {
+        const convs = await api('/conversations');
+        if (!convs.length) {
+            el.innerHTML = `<div class="empty-state"><span class="material-icons-round">forum</span><h3>No messages yet</h3><p>${getRole()==='student'?'Message a tutor from their profile or your bookings':'Students will message you here'}</p></div>`;
+            return;
+        }
+        el.innerHTML = convs.map(c => `
+            <div class="conv-item" onclick="openChat(${c.partner_id}, '${(c.partner_name||'').replace(/'/g,"&#39;")}', '${c.partner_photo||''}')">
+                ${avatarHtml(c.partner_name, c.partner_photo, 'card-avatar')}
+                <div class="conv-info">
+                    <div class="conv-name">${c.partner_name}</div>
+                    <div class="conv-last">${c.last_text || 'Start a conversation'}</div>
+                </div>
+                ${c.unread ? `<span class="conv-unread">${c.unread}</span>` : ''}
+            </div>`).join('');
+    } catch(e) {
+        el.innerHTML = '<div class="empty-state"><p>Could not load messages</p></div>';
+    }
+}
+
+function openChat(partnerId, partnerName, partnerPhoto) {
+    state.chatPartner = { id: partnerId, name: partnerName, photo: partnerPhoto || null };
+    navigate('chat');
+}
+
+// ============ CHAT PAGE ============
+function renderChatPage() {
+    const p = state.chatPartner;
+    if (!p) { navigate('messages'); return ''; }
+    return `
+    <div class="chat-header">
+        <button class="back-btn" onclick="navigate('messages')" style="color:#fff"><span class="material-icons-round">arrow_back</span></button>
+        ${avatarHtml(p.name, p.photo, 'chat-avatar')}
+        <div class="chat-title">${p.name}</div>
+    </div>
+    <div class="chat-messages" id="chatMessages"><div class="loading"><div class="spinner"></div></div></div>
+    <form class="chat-input-bar" id="chatForm" onsubmit="sendChatMessage(event)">
+        <input type="text" id="chatText" placeholder="Type a message..." autocomplete="off">
+        <button type="submit" class="chat-send"><span class="material-icons-round">send</span></button>
+    </form>`;
+}
+
+async function loadChat() {
+    const p = state.chatPartner;
+    if (!p) return;
+    const role = getRole();
+    const query = role === 'teacher' ? `student_id=${p.id}` : `teacher_id=${p.id}`;
+    try {
+        const msgs = await api(`/messages?${query}`);
+        const el = document.getElementById('chatMessages');
+        if (!el) return;
+        if (!msgs.length) {
+            el.innerHTML = `<div class="chat-empty">Say hello 👋</div>`;
+        } else {
+            el.innerHTML = msgs.map(m => `
+                <div class="chat-bubble ${m.sender_role === role ? 'mine' : 'theirs'}">
+                    ${m.text}
+                    <span class="chat-time">${m.created_at ? new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : ''}</span>
+                </div>`).join('');
+            el.scrollTop = el.scrollHeight;
+        }
+    } catch(e) {}
+}
+
+async function sendChatMessage(e) {
+    e.preventDefault();
+    const input = document.getElementById('chatText');
+    const text = input.value.trim();
+    if (!text) return;
+    const p = state.chatPartner;
+    const role = getRole();
+    const body = role === 'teacher' ? { student_id: p.id, text } : { teacher_id: p.id, text };
+    input.value = '';
+    try {
+        await api('/messages', { method: 'POST', body });
+        loadChat();
+    } catch(e) { showToast(e.message || 'Could not send'); }
 }
 
 // ============ RENDER TEACHER CARDS ============
@@ -605,9 +745,12 @@ function renderTeacherCards(teachers, containerId) {
     container.innerHTML = teachers.map(t => `
         <div class="teacher-card" onclick="viewTeacher(${t.id})">
             <div class="teacher-card-header">
-                <div class="teacher-info">
-                    <div class="teacher-name">${t.name}</div>
-                    <div class="teacher-meta">${t.qualification} • ${t.experience_years} yrs</div>
+                <div style="display:flex;gap:12px;align-items:center;flex:1">
+                    ${avatarHtml(t.name, t.photo_url, 'card-avatar')}
+                    <div class="teacher-info">
+                        <div class="teacher-name">${t.name}</div>
+                        <div class="teacher-meta">${t.qualification} • ${t.experience_years} yrs</div>
+                    </div>
                 </div>
                 ${t.is_verified ? '<span class="verified-badge">✓ Verified</span>' : ''}
             </div>
@@ -638,6 +781,13 @@ function attachEventListeners() {
     if (state.currentPage === 'teacher') loadTeacherProfile();
     if (state.currentPage === 'dashboard') loadDashboard();
     if (state.currentPage === 'register-teacher') loadRegCategories();
+    if (state.currentPage === 'messages') loadConversations();
+    if (state.currentPage === 'chat') {
+        loadChat();
+        // poll for new messages every 4 seconds while on chat
+        if (state.chatPollTimer) clearInterval(state.chatPollTimer);
+        state.chatPollTimer = setInterval(loadChat, 4000);
+    }
 }
 
 // Load categories into the teacher registration form
@@ -964,7 +1114,8 @@ async function submitBooking(e) {
         phone: document.getElementById('bookPhone').value,
         subject: document.getElementById('bookSubject').value,
         area: document.getElementById('bookArea').value,
-        preferred_time: document.getElementById('bookTime').value,
+        session_date: document.getElementById('bookDate').value,
+        session_time: document.getElementById('bookSlot').value,
         preferred_days: document.getElementById('bookDays').value,
         teaching_mode: document.getElementById('bookMode').value,
         message: document.getElementById('bookMessage').value,
@@ -973,7 +1124,7 @@ async function submitBooking(e) {
     try {
         const res = await api('/requests', { method: 'POST', body: data });
         showToast(`Request sent! ID: ${res.request_id}`);
-        navigate('home');
+        navigate(isLoggedIn() ? 'dashboard' : 'home');
     } catch(e) {
         showToast(e.message || 'Failed to send request');
     }
@@ -1011,12 +1162,14 @@ async function loadDashboard() {
                             <div class="req-details">
                                 <strong>${r.subject}</strong><br>
                                 ${r.message ? `"${r.message}"<br>` : ''}
-                                Time: ${r.preferred_time || 'Flexible'} | Days: ${r.preferred_days || 'Flexible'}<br>
-                                Mode: ${r.teaching_mode} | Phone: ${r.student_phone}
+                                ${r.session_date ? `📅 ${r.session_date}${r.session_time ? ' at ' + r.session_time : ''}<br>` : ''}
+                                Days: ${r.preferred_days || 'Flexible'} | Mode: ${r.teaching_mode}<br>
+                                Fee: ₹${r.fee_amount || '—'} | Phone: ${r.student_phone}
                             </div>
                             <div class="req-actions">
                                 <button class="btn btn-primary btn-sm" onclick="respondToRequest('${r.request_id}','accepted')">Accept</button>
                                 <button class="btn btn-danger btn-sm" onclick="respondToRequest('${r.request_id}','rejected')">Decline</button>
+                                <button class="btn btn-outline btn-sm" onclick="openChat(${r.student_id}, '${(r.student_name||'').replace(/'/g,"&#39;")}', '')"><span class="material-icons-round" style="font-size:1rem">chat_bubble</span></button>
                             </div>
                         </div>
                     `).join('');
@@ -1058,8 +1211,13 @@ async function loadDashboard() {
                             </div>
                             <div class="req-details">
                                 <strong>${r.subject}</strong><br>
-                                Status: ${r.status} | ID: ${r.request_id}<br>
+                                ${r.session_date ? `📅 ${r.session_date}${r.session_time ? ' at ' + r.session_time : ''}<br>` : ''}
+                                Fee: ₹${r.fee_amount || '—'} • ${r.payment_status === 'paid' ? '<span style="color:var(--success);font-weight:600">Paid ✓</span>' : 'Unpaid'}<br>
                                 ${r.teacher_response ? `Teacher says: "${r.teacher_response}"` : ''}
+                            </div>
+                            <div class="req-actions">
+                                ${r.status === 'accepted' && r.payment_status !== 'paid' ? `<button class="btn btn-primary btn-sm" onclick="payRequest('${r.request_id}', ${r.fee_amount || 0})"><span class="material-icons-round" style="font-size:1rem">payments</span> Pay ₹${r.fee_amount || 0}</button>` : ''}
+                                <button class="btn btn-outline btn-sm" onclick="openChat(${r.teacher_id}, '${(r.teacher_name||'').replace(/'/g,"&#39;")}', '${r.teacher_photo||''}')"><span class="material-icons-round" style="font-size:1rem">chat_bubble</span> Message</button>
                             </div>
                         </div>
                     `).join('');
@@ -1081,6 +1239,21 @@ async function respondToRequest(requestId, status) {
         loadDashboard();
     } catch(e) {
         showToast(e.message || 'Error responding');
+    }
+}
+
+// ============ PAYMENT (demo — wire a real gateway later) ============
+async function payRequest(requestId, amount) {
+    if (!confirm(`Pay ₹${amount} to confirm your booking?\n\n(This is a demo payment — no real charge.)`)) return;
+    try {
+        await api(`/requests/${requestId}/pay`, {
+            method: 'POST',
+            body: { phone: state.user?.phone, payment_ref: 'DEMO-' + Date.now() }
+        });
+        showToast('Payment successful! Booking confirmed.');
+        loadDashboard();
+    } catch(e) {
+        showToast(e.message || 'Payment failed');
     }
 }
 

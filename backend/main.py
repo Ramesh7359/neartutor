@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from database import engine, Base, get_db
-from models import Teacher, Student, TuitionRequest, Review
+from models import Teacher, Student, TuitionRequest, Review, Message
 from datetime import datetime, timedelta
 from typing import Optional
 import hashlib
@@ -328,6 +328,7 @@ def register_teacher(request: dict, db: Session = Depends(get_db)):
         phone=request.get("phone"),
         email=request.get("email"),
         password_hash=hash_password(request.get("password", "password123")),
+        photo_url=request.get("photo_url"),
         qualification=request.get("qualification"),
         experience_years=request.get("experience_years", 0),
         category=request.get("category", "academics"),
@@ -383,6 +384,7 @@ def get_teachers(subject: str = None, area: str = None, class_level: str = None,
 
         result.append({
             "id": t.id, "name": t.name, "phone": t.phone,
+            "photo_url": t.photo_url,
             "qualification": t.qualification, "experience_years": t.experience_years,
             "category": t.category,
             "subjects": subjects, "classes": classes,
@@ -450,6 +452,7 @@ def get_teacher_profile(teacher_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Teacher not found")
     return {
         "id": t.id, "name": t.name, "phone": t.phone, "email": t.email,
+        "photo_url": t.photo_url,
         "qualification": t.qualification, "experience_years": t.experience_years,
         "category": t.category,
         "subjects": json.loads(t.subjects) if t.subjects else [],
@@ -475,7 +478,7 @@ def update_teacher_profile(teacher_id: int, request: dict, db: Session = Depends
     if not teacher:
         raise HTTPException(status_code=404, detail="Teacher not found")
 
-    updatable_fields = ["name", "email", "qualification", "experience_years",
+    updatable_fields = ["name", "email", "photo_url", "qualification", "experience_years",
                         "teaching_mode", "bio", "area", "city", "pincode",
                         "latitude", "longitude", "travel_radius_km",
                         "fee_per_hour", "fee_per_month",
@@ -560,12 +563,17 @@ def teacher_dashboard(db: Session = Depends(get_db), payload: dict = Depends(ver
         },
         "pending_requests": [{
             "id": r.id, "request_id": r.request_id,
+            "student_id": r.student_id,
             "student_name": r.student.name if r.student else "",
             "student_phone": r.student.phone if r.student else "",
             "subject": r.subject, "message": r.message,
             "preferred_time": r.preferred_time,
             "preferred_days": r.preferred_days,
+            "session_date": r.session_date,
+            "session_time": r.session_time,
             "teaching_mode": r.teaching_mode,
+            "fee_amount": r.fee_amount,
+            "payment_status": r.payment_status,
             "created_at": r.created_at.isoformat() if r.created_at else ""
         } for r in pending],
         "recent_reviews": [{
@@ -599,9 +607,15 @@ def student_dashboard(db: Session = Depends(get_db), payload: dict = Depends(ver
         },
         "requests": [{
             "id": r.id, "request_id": r.request_id,
+            "teacher_id": r.teacher_id,
             "teacher_name": r.teacher.name if r.teacher else "",
             "teacher_phone": r.teacher.phone if r.teacher else "",
+            "teacher_photo": r.teacher.photo_url if r.teacher else None,
             "subject": r.subject, "message": r.message,
+            "session_date": r.session_date,
+            "session_time": r.session_time,
+            "fee_amount": r.fee_amount,
+            "payment_status": r.payment_status,
             "status": r.status,
             "teacher_response": r.teacher_response,
             "created_at": r.created_at.isoformat() if r.created_at else ""
@@ -631,6 +645,10 @@ def create_request(request: dict, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(student)
 
+    # Estimated fee: use teacher's hourly rate if available
+    teacher = db.query(Teacher).filter_by(id=request.get("teacher_id")).first()
+    fee_amount = request.get("fee_amount") or (teacher.fee_per_hour if teacher else 0)
+
     tuition_req = TuitionRequest(
         request_id=request_id,
         student_id=student.id,
@@ -640,11 +658,16 @@ def create_request(request: dict, db: Session = Depends(get_db)):
         preferred_time=request.get("preferred_time", ""),
         preferred_days=request.get("preferred_days", ""),
         teaching_mode=request.get("teaching_mode", "home_visit"),
+        session_date=request.get("session_date", ""),
+        session_time=request.get("session_time", ""),
+        fee_amount=fee_amount,
+        payment_status="unpaid",
         status="pending"
     )
     db.add(tuition_req)
     db.commit()
-    return {"message": "Request sent successfully!", "request_id": request_id}
+    return {"message": "Request sent successfully!", "request_id": request_id,
+            "fee_amount": fee_amount}
 
 
 @app.get("/api/requests")
@@ -662,6 +685,7 @@ def get_all_requests(teacher_id: int = None, student_id: int = None,
     return [{
         "id": r.id,
         "request_id": r.request_id,
+        "student_id": r.student_id,
         "student_name": r.student.name if r.student else "",
         "student_phone": r.student.phone if r.student else "",
         "teacher_name": r.teacher.name if r.teacher else "",
@@ -670,7 +694,11 @@ def get_all_requests(teacher_id: int = None, student_id: int = None,
         "message": r.message,
         "preferred_time": r.preferred_time,
         "preferred_days": r.preferred_days,
+        "session_date": r.session_date,
+        "session_time": r.session_time,
         "teaching_mode": r.teaching_mode,
+        "fee_amount": r.fee_amount,
+        "payment_status": r.payment_status,
         "status": r.status,
         "teacher_response": r.teacher_response,
         "created_at": r.created_at.isoformat() if r.created_at else ""
@@ -847,6 +875,121 @@ def get_classes():
         "IIT-JEE Prep", "NEET Prep", "EAMCET Prep",
         "College / Graduate", "Working Professional", "All Levels"
     ]
+
+
+# ============ MESSAGING (in-app chat, polled) ============
+@app.post("/api/messages")
+def send_message(request: dict, db: Session = Depends(get_db), payload: dict = Depends(verify_token)):
+    teacher_id = request.get("teacher_id")
+    student_id = request.get("student_id")
+    text = (request.get("text") or "").strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="Message cannot be empty")
+
+    role = payload["role"]
+    # Authorize: sender must be a participant of this conversation
+    if role == "teacher":
+        teacher_id = payload["user_id"]
+        if not student_id:
+            raise HTTPException(status_code=400, detail="student_id required")
+    elif role == "student":
+        student_id = payload["user_id"]
+        if not teacher_id:
+            raise HTTPException(status_code=400, detail="teacher_id required")
+    else:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    msg = Message(teacher_id=teacher_id, student_id=student_id, sender_role=role, text=text)
+    db.add(msg)
+    db.commit()
+    return {"message": "sent", "id": msg.id}
+
+
+@app.get("/api/messages")
+def get_messages(teacher_id: int = None, student_id: int = None,
+                 db: Session = Depends(get_db), payload: dict = Depends(verify_token)):
+    role = payload["role"]
+    if role == "teacher":
+        teacher_id = payload["user_id"]
+        if not student_id:
+            raise HTTPException(status_code=400, detail="student_id required")
+    elif role == "student":
+        student_id = payload["user_id"]
+        if not teacher_id:
+            raise HTTPException(status_code=400, detail="teacher_id required")
+    else:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    msgs = db.query(Message).filter_by(teacher_id=teacher_id, student_id=student_id).order_by(
+        Message.created_at.asc()).all()
+    # Mark messages from the other party as read
+    for m in msgs:
+        if m.sender_role != role and not m.is_read:
+            m.is_read = True
+    db.commit()
+
+    return [{
+        "id": m.id, "sender_role": m.sender_role, "text": m.text,
+        "is_read": m.is_read,
+        "created_at": m.created_at.isoformat() if m.created_at else ""
+    } for m in msgs]
+
+
+@app.get("/api/conversations")
+def get_conversations(db: Session = Depends(get_db), payload: dict = Depends(verify_token)):
+    """List conversation partners for the logged-in user, with last message preview."""
+    role = payload["role"]
+    uid = payload["user_id"]
+    if role == "teacher":
+        rows = db.query(Message).filter_by(teacher_id=uid).order_by(Message.created_at.desc()).all()
+        partner_ids = []
+        seen = set()
+        for m in rows:
+            if m.student_id not in seen:
+                seen.add(m.student_id); partner_ids.append(m.student_id)
+        result = []
+        for sid in partner_ids:
+            s = db.query(Student).get(sid)
+            last = db.query(Message).filter_by(teacher_id=uid, student_id=sid).order_by(
+                Message.created_at.desc()).first()
+            unread = db.query(Message).filter_by(teacher_id=uid, student_id=sid, sender_role="student", is_read=False).count()
+            result.append({"partner_id": sid, "partner_name": s.name if s else "Student",
+                           "last_text": last.text if last else "", "unread": unread})
+        return result
+    else:
+        rows = db.query(Message).filter_by(student_id=uid).order_by(Message.created_at.desc()).all()
+        partner_ids = []
+        seen = set()
+        for m in rows:
+            if m.teacher_id not in seen:
+                seen.add(m.teacher_id); partner_ids.append(m.teacher_id)
+        result = []
+        for tid in partner_ids:
+            t = db.query(Teacher).get(tid)
+            last = db.query(Message).filter_by(teacher_id=tid, student_id=uid).order_by(
+                Message.created_at.desc()).first()
+            unread = db.query(Message).filter_by(teacher_id=tid, student_id=uid, sender_role="teacher", is_read=False).count()
+            result.append({"partner_id": tid, "partner_name": t.name if t else "Tutor",
+                           "partner_photo": t.photo_url if t else None,
+                           "last_text": last.text if last else "", "unread": unread})
+        return result
+
+
+# ============ PAYMENTS (payment-ready demo; wire a gateway later) ============
+@app.post("/api/requests/{request_id}/pay")
+def pay_request(request_id: str, request: dict, db: Session = Depends(get_db)):
+    """Records a payment against a booking. Demo implementation — integrate
+    Razorpay/Stripe here by verifying the gateway signature before marking paid."""
+    tr = db.query(TuitionRequest).filter_by(request_id=request_id).first()
+    if not tr:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    # verify by phone (lightweight auth for the customer flow)
+    if tr.student and request.get("phone") and tr.student.phone != request.get("phone"):
+        raise HTTPException(status_code=403, detail="Not authorized")
+    tr.payment_status = "paid"
+    tr.payment_ref = request.get("payment_ref", f"DEMO-{datetime.now().strftime('%Y%m%d%H%M%S')}")
+    db.commit()
+    return {"message": "Payment recorded", "payment_status": "paid", "payment_ref": tr.payment_ref}
 
 
 # ============ SERVE FRONTEND ============
